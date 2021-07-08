@@ -1,5 +1,8 @@
 const fs = require("fs");
 
+const dotenv = require("dotenv");
+dotenv.config();
+
 const express = require("express");
 const morgan = require("morgan");
 const helmet = require("helmet");
@@ -11,7 +14,11 @@ const multipart = require("connect-multiparty");
 const multipartMiddleware = multipart({uploadDir: "./uploads"});
 
 const authConfig = require("./auth_config.json");
+const {downloadFile} = require("./forge/oss");
+const {getBuckets} = require("./forge/oss");
 
+const {createBucket, uploadFile} = require("./forge/oss");
+const {translateJob} = require("./forge/modelderivative");
 
 const app = express();
 
@@ -35,6 +42,7 @@ app.use(
              origin: authConfig.appUri
          })
 );
+
 
 const checkJwt = jwt({
                          secret: jwksRsa.expressJwtSecret({
@@ -100,6 +108,51 @@ app.post("/api/upload", checkJwt, multipartMiddleware, (req, res) => {
                      message: "Could not upload file. " + err
                  });
     });
+});
+
+
+app.get("/api/forge/test", async (req, res) => {
+    const filePath = "test.STEP";
+    // const {body} = await createBucket("thiele-test");
+    // console.dir(body);
+    const bucketKey = "whqpeh6ubyuda9okxvapaca0dabi2xt4-thiele-test";
+
+    uploadFile(filePath, "step-test-file", bucketKey).then(async (response) => {
+        console.log(response.body);
+
+        const urn = response.body.objectId + ".STEP";
+        translateJob(urn)
+            .then(async (response) => {
+
+                const download = await downloadFile("step-test-file", bucketKey);
+                fs.writeFile("fuck-this.obj", download.body, err => {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+                    //file written successfully
+                });
+                res.json({success: response.body, download: download.statusCode});
+            })
+            .catch(err => {
+                console.log(err);
+                res.status(err.statusCode);
+                res.send({error: err.statusBody});
+            });
+    }).catch(err => {
+        console.log(err);
+        res.status(err.statusCode);
+        res.send({error: err.statusBody});
+    });
+
+    // const testUrn = "urn:adsk.objects:os.object:whqpeh6ubyuda9okxvapaca0dabi2xt4-thiele-test/step-test-file";
+    // translateJob(testUrn)
+    //     .then(console.log)
+    //     .catch(err => {
+    //         console.log(err);
+    //         res.status(err.statusCode);
+    //         res.send({error: err.statusBody});
+    //     });
 });
 
 
