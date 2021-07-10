@@ -37,9 +37,9 @@ const {getClient, getInternalToken} = require("./oauth");
 
 // POST /api/forge/modelderivative/jobs - submits a new translation job for given object URN.
 // Request body must be a valid JSON in the form of { "objectName": "<translated-object-urn>" }.
-async function translateJob(objectURN) {
-    const urn = encodeBase64(objectURN);
-    console.log(`Tranlsating urn[${urn}]`);
+async function translateJob(objectId) {
+    const urn = encodeBase64(objectId);
+    console.log(`Translating urn[${urn}]`);
 
     const client = getClient();
     const token = await getInternalToken();
@@ -50,27 +50,58 @@ async function translateJob(objectURN) {
     job.output = new JobPayloadOutput([
                                           new JobStepOutputPayload()
                                       ]);
-    job.output.formats[0].type = "obj";
+    job.output.formats[0].type = "SVF";
     job.output.formats[0].views = ["2d", "3d"];
 
-    return new Promise(async (resolve, reject) => {
-        try {
-            // Submit a translation job using [DerivativesApi](https://github.com/Autodesk-Forge/forge-api-nodejs-client/blob/master/docs/DerivativesApi.md#translate).
-            const response = await new DerivativesApi().translate(job, {}, client, token);
-            resolve(response);
-        } catch (err) {
-            reject(err);
+    job = {
+        "input": {
+            "urn": urn
+        },
+        "output": {
+            "destination": {
+                "region": "us"
+            },
+            "formats": [
+                {
+                    "type": "svf",
+                    views: ["2d", "3d"]
+                }
+            ]
         }
-    });
+    };
+    // Submit a translation job using [DerivativesApi](https://github.com/Autodesk-Forge/forge-api-nodejs-client/blob/master/docs/DerivativesApi.md#translate).
+    return new DerivativesApi().translate(job, {xAdsForce: true}, client, token);
+}
+
+
+async function getManifest(urn) {
+    console.log(`Getting manifest urn[${urn}]`);
+
+    const client = getClient();
+    const token = await getInternalToken();
+
+    return new DerivativesApi().getManifest(urn, {}, client, token);
+}
+
+async function downloadTranslatedFile(urn, derivativeUrn) {
+    console.log(`Downloading manifest urn[${urn}]`);
+    console.log(`derivativeUrn[${derivativeUrn}]`);
+
+    const client = getClient();
+    const token = await getInternalToken();
+
+    return new DerivativesApi().getDerivativeManifest(urn, derivativeUrn, {}, client, token);
 }
 
 
 function encodeBase64(data) {
     let buff = new Buffer(data);
-    return buff.toString("base64").replace('=', '');
+    return buff.toString("base64");
 }
 
 
 module.exports = {
-    translateJob
+    translateJob,
+    getManifest,
+    downloadTranslatedFile
 };

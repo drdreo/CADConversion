@@ -52,6 +52,8 @@ async function getBuckets(bucketName) {
             // Retrieve up to 100 objects from Forge using the [ObjectsApi](https://github.com/Autodesk-Forge/forge-api-nodejs-client/blob/master/docs/ObjectsApi.md#getObjects)
             // Note: if there's more objects in the bucket, you should call the getObjects method in a loop, providing different 'startAt' params
             const objects = await new ObjectsApi().getObjects(bucketName, {limit: 100}, client, token);
+            console.log(objects);
+
             return objects.body.items.map((object) => {
                 return {
                     id: Buffer.from(object.objectId).toString("base64"),
@@ -79,12 +81,33 @@ async function createBucket(bucketName) {
     payload.bucketKey = config.credentials.client_id.toLowerCase() + "-" + bucketName;
     payload.policyKey = "transient"; // expires in 24h
 
-    try {
-        // Create a bucket using [BucketsApi](https://github.com/Autodesk-Forge/forge-api-nodejs-client/blob/master/docs/BucketsApi.md#createBucket).
-        return await new BucketsApi().createBucket(payload, {}, client, token);
-    } catch (err) {
-        console.error(err);
-    }
+    // Create a bucket using [BucketsApi](https://github.com/Autodesk-Forge/forge-api-nodejs-client/blob/master/docs/BucketsApi.md#createBucket).
+    return new BucketsApi().createBucket(payload, {}, client, token);
+}
+
+async function existOrCreateBucket(bucketKey) {
+    console.log("Check Bucket if bucket exists...");
+
+    const client = getClient();
+    const token = await getInternalToken();
+
+    const ossBuckets = new BucketsApi();
+    return (ossBuckets.getBucketDetails(bucketKey, client, token)
+                      .then(function (results) {
+                          return (results);
+                      })
+                      .catch(function (error) {
+                          console.log("Create Bucket...");
+                          const opts = {
+                              bucketKey: bucketKey,
+                              policyKey: "persistent"
+                          };
+                          const headers = {
+                              xAdsRegion: "US"
+                          };
+                          return (ossBuckets.createBucket(opts, headers, client, token));
+                      })
+    );
 }
 
 // POST /api/forge/oss/objects - uploads new object to given bucket.
@@ -95,6 +118,7 @@ async function uploadFile(filePath, originalName, bucketKey) {
     const token = await getInternalToken();
 
     return new Promise(async (resolve, reject) => {
+        console.log('reading file: ', filePath);
         fs.readFile(filePath, async (err, data) => {
             if (err) {
                 throw err;
@@ -133,6 +157,7 @@ async function downloadFile(originalName, bucketKey) {
 module.exports = {
     getBuckets,
     createBucket,
+    existOrCreateBucket,
     uploadFile,
     downloadFile
 };

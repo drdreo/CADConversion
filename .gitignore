@@ -2,6 +2,7 @@
 auth_config.json
 
 .env
+/samples
 
 # compiled output
 /dist
