@@ -52,7 +52,6 @@ async function getBuckets(bucketName) {
             // Retrieve up to 100 objects from Forge using the [ObjectsApi](https://github.com/Autodesk-Forge/forge-api-nodejs-client/blob/master/docs/ObjectsApi.md#getObjects)
             // Note: if there's more objects in the bucket, you should call the getObjects method in a loop, providing different 'startAt' params
             const objects = await new ObjectsApi().getObjects(bucketName, {limit: 100}, client, token);
-            console.log(objects);
 
             return objects.body.items.map((object) => {
                 return {

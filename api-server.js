@@ -14,14 +14,19 @@ const multipart = require("connect-multiparty");
 const multipartMiddleware = multipart({uploadDir: "./uploads"});
 
 const authConfig = require("./auth_config.json");
-const {getManifest} = require("./forge/modelderivative");
-const {downloadFile} = require("./forge/oss");
-const {getBuckets} = require("./forge/oss");
-
-const {createBucket, uploadFile} = require("./forge/oss");
-const {translateJob} = require("./forge/modelderivative");
 
 const app = express();
+
+function requestLogger(httpModule) {
+    const original = httpModule.request;
+    httpModule.request = function (options, callback) {
+        console.log(options.method, options.href || options.proto + "://" + options.host + options.path);
+        return original(options, callback);
+    };
+}
+
+requestLogger(require("http"));
+requestLogger(require("https"));
 
 if (!authConfig.domain || !authConfig.audience || authConfig.audience === "YOUR_API_IDENTIFIER") {
     console.log(
@@ -57,6 +62,8 @@ const checkJwt = jwt({
                          issuer: `https://${authConfig.domain}/`,
                          algorithms: ["RS256"]
                      });
+
+app.use("/conversions", express.static("conversions"));
 
 app.get("/health", (req, res) => {
     res.json({status: "Available"});
@@ -111,91 +118,8 @@ app.post("/api/upload", checkJwt, multipartMiddleware, (req, res) => {
     });
 });
 
-
-app.post("/api/forge/bucket", async (req, res) => {
-    const bucketName = req.body.bucket || "thiele-test";
-
-    try {
-        const {body} = await createBucket(bucketName);
-        console.dir(body);
-        res.json({buckets: body});
-    } catch (e) {
-        console.log(e);
-        res.status(e.statusCode);
-        res.send({error: e.statusBody});
-    }
-});
-
-
-app.get("/api/forge/list", async (req, res) => {
-    const bucketKey = "whqpeh6ubyuda9okxvapaca0dabi2xt4-thiele-test";
-
-    try {
-        const response = await getBuckets(bucketKey);
-        console.log(response);
-        res.json({buckets: response.body});
-    } catch (e) {
-        console.log(e);
-        res.status(e.statusCode);
-        res.send({error: e.statusBody});
-    }
-});
-
-app.get("/api/forge/manifest/:urn", async (req, res) => {
-    const urn = req.params.urn;
-
-    try {
-        const {body} = await getManifest(urn);
-        console.log(body);
-        res.json({manifest: body});
-    } catch (e) {
-        console.log(e);
-        res.status(e.statusCode);
-        res.send({error: e.statusBody});
-    }
-});
-
-
-app.get("/api/forge/convert", async (req, res) => {
-    const filePath = "samples/airboat.obj";
-
-    const bucketKey = "whqpeh6ubyuda9okxvapaca0dabi2xt4-thiele-test";
-
-    try {
-        const {body} = await uploadFile(filePath, "step-test", bucketKey);
-        console.log(body);
-
-        const objectId = body.objectId + ".obj";
-
-        const translateResponse = await translateJob(objectId);
-        console.log(translateResponse.body);
-        // const download = await downloadFile("step-test-file", bucketKey);
-        // fs.writeFile("fuck-this.obj", download.body, err => {
-        //     if (err) {
-        //         console.error(err);
-        //         return;
-        //     }
-        //     //file written successfully
-        // });
-        res.json({success: translateResponse.body});
-
-
-    } catch (err) {
-        console.log(err);
-        res.status(err.statusCode);
-        res.send({error: err.statusBody});
-    }
-
-
-    // const testUrn = "urn:adsk.objects:os.object:whqpeh6ubyuda9okxvapaca0dabi2xt4-thiele-test/step-test-file";
-    // translateJob(testUrn)
-    //     .then(console.log)
-    //     .catch(err => {
-    //         console.log(err);
-    //         res.status(err.statusCode);
-    //         res.send({error: err.statusBody});
-    //     });
-});
+// forge API handlers
+require('./conversion-handler')(app, checkJwt);
 
 
 const port = process.env.API_SERVER_PORT || 3001;
