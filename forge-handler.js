@@ -1,8 +1,7 @@
-const {downloadTranslatedFile} = require("./forge/modelderivative");
-const {encodeBase64} = require("./utils");
+const {createBucket, getBuckets} = require("./forge/oss");
+const {getManifest} = require("./forge/modelderivative");
+const {uploadFileToForge, downloadForgeFile} = require("./forge/forge-helper");
 
-const {createBucket, uploadFile, getBuckets} = require("./forge/oss");
-const {getManifest, translateJob} = require("./forge/modelderivative");
 
 module.exports = function (app, checkJwt) {
 
@@ -49,20 +48,13 @@ module.exports = function (app, checkJwt) {
         }
     });
 
-
     app.get("/api/forge/convert", async (req, res) => {
         const filePath = "samples/bauplan.stp";
 
-        const bucketKey = "thiele-conversion";
         const ossSourceFileObjectKey = "bauplan.stp";
 
         try {
-            const {body} = await uploadFile(filePath, ossSourceFileObjectKey, bucketKey);
-            console.log(body);
-
-            const ossSourceFileURN = body.objectId;
-            const ossEncodedSourceFileURN = encodeBase64(ossSourceFileURN);
-            const translateResponse = await translateJob(ossEncodedSourceFileURN);
+            const translateResponse = await uploadFileToForge(filePath, ossSourceFileObjectKey);
 
             res.json({success: translateResponse.body});
         } catch (err) {
@@ -79,38 +71,14 @@ module.exports = function (app, checkJwt) {
 
         const encodedSourceURN = "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6dGhpZWxlLWNvbnZlcnNpb24vYmF1cGxhbi5zdHA";
 
-        try {
-            const {body} = await getManifest(encodedSourceURN);
-
-            if (body.progress !== "complete") {
-                res.status(500);
-                res.send({error: "Translation not finished yet"});
-                return;
-            }
-
-            const objDerivative = body.derivatives.find(derivative => derivative.outputType === "obj");
-            const objChild = objDerivative.children.find(child => child.urn.endsWith(".obj"));
-            console.log(objChild);
-            if (!objChild) {
-                throw new Error("No obj child found in derivatives!");
-            }
-
-            const download = await downloadTranslatedFile(encodedSourceURN, objChild.urn);
-            console.log(download);
-            fs.writeFile(`conversions/${fileName}`, download.body, err => {
-                if (err) {
-                    console.error(err);
-                    res.json({error: err.message});
-                    return;
-                }
-                console.log(`Converted successfully - /conversions/${fileName}`);
-                res.json({downloadPath: `/conversions/${fileName}`});
-            });
-        } catch (err) {
-            console.log(err);
-            res.status(err.statusCode);
-            res.send({error: err.statusBody});
-        }
+        downloadForgeFile(encodedSourceURN, fileName).then(success => {
+            console.log(`Converted successfully - /conversions/${fileName}`);
+            res.json(success);
+        }).catch(error => {
+            console.log(error);
+            res.status(error.statusCode || 500);
+            res.send({error: error.statusBody});
+        });
 
     });
 };
