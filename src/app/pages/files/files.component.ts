@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { AuthService } from '@auth0/auth0-angular';
 import { FileUploadControl } from '@iplab/ngx-file-upload';
+import { HotToastService } from '@ngneat/hot-toast';
 import FileSaver from 'file-saver';
-import { Subject, Observable } from 'rxjs';
-import { takeUntil, filter, switchMap } from 'rxjs/operators';
+import { Subject, Observable, of } from 'rxjs';
+import { takeUntil, filter, switchMap, catchError } from 'rxjs/operators';
 import { FilesService } from '../../files.service';
 
 @Component({
@@ -20,14 +21,17 @@ export class FilesComponent implements OnInit, AfterViewInit, OnDestroy {
 
 	private unsubscribe$ = new Subject();
 
-	constructor(public auth: AuthService, private filesService: FilesService) {
+	constructor(public auth: AuthService, private filesService: FilesService, private toastService: HotToastService) {
 
 		this.files$ = this.fetchFiles$.pipe(
 			switchMap(() => {
-				console.log('switching');
-				return this.filesService.getUserFiles();
-			})
-		);
+				return this.filesService.getUserFiles()
+						   .pipe(catchError(_ => {
+							   this.toastService.error('Something went wrong fetching your files!');
+							   return of(undefined);
+						   }));
+			}));
+
 	}
 
 	ngOnInit() {
@@ -61,9 +65,11 @@ export class FilesComponent implements OnInit, AfterViewInit, OnDestroy {
 
 		this.filesService.uploadFiles(formData).then(result => {
 			console.log('Upload Response ', result);
+			this.toastService.success('Upload successful!');
 
 			this.fetchFiles$.next();
 		}).catch(e => {
+			this.toastService.error('Something went wrong while uploading!');
 			console.error('Error while uploading: ', e);
 		});
 	}

@@ -18,6 +18,7 @@ import { HomeComponent } from './pages/home/home.component';
 import { ProfileComponent } from './pages/profile/profile.component';
 import { FilesComponent } from './pages/files/files.component';
 import { FileUploadModule } from '@iplab/ngx-file-upload';
+import { HotToastModule } from '@ngneat/hot-toast';
 
 @NgModule({
 	declarations: [
@@ -44,7 +45,8 @@ import { FileUploadModule } from '@iplab/ngx-file-upload';
 			}
 		}),
 		FileUploadModule,
-		BrowserAnimationsModule
+		BrowserAnimationsModule,
+		HotToastModule.forRoot()
 	],
 	providers: [
 		{

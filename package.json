@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "start": "ng serve",
-    "build": "ng build --base-href \"/conversion-app/\" --prod",
+    "build": "ng build --prod",
     "server:app": "node server.js",
     "server:api": "node api-server.js",
     "dev": "npm-run-all --parallel start server:api",
@@ -29,6 +29,8 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.34",
     "@fortawesome/free-solid-svg-icons": "^5.15.2",
     "@iplab/ngx-file-upload": "^3.3.1",
+    "@ngneat/hot-toast": "^3.3.0",
+    "@ngneat/overview": "^2.0.2",
     "connect-multiparty": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
