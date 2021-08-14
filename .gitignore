@@ -1,7 +1,10 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 auth_config.json
+auth_config.prod.json
 
 .env
+.env.prod
+
 /samples
 
 # compiled output
