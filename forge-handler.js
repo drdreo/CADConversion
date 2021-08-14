@@ -5,7 +5,7 @@ const {uploadFileToForge, downloadForgeFile} = require("./forge/forge-helper");
 
 module.exports = function (app, checkJwt) {
 
-    app.post("/api/forge/bucket", async (req, res) => {
+    app.post("/forge/bucket", async (req, res) => {
         const bucketName = req.body.bucket || "thiele-conversion";
 
         try {
@@ -20,7 +20,7 @@ module.exports = function (app, checkJwt) {
     });
 
 
-    app.get("/api/forge/list", async (req, res) => {
+    app.get("/forge/list", async (req, res) => {
         const bucketKey = "thiele-conversion";
 
         try {
@@ -34,7 +34,7 @@ module.exports = function (app, checkJwt) {
         }
     });
 
-    app.get("/api/forge/manifest/:urn", async (req, res) => {
+    app.get("/forge/manifest/:urn", async (req, res) => {
         const urn = req.params.urn;
 
         try {
@@ -48,7 +48,7 @@ module.exports = function (app, checkJwt) {
         }
     });
 
-    app.get("/api/forge/convert", async (req, res) => {
+    app.get("/forge/convert", async (req, res) => {
         const filePath = "samples/bauplan.stp";
 
         const ossSourceFileObjectKey = "bauplan.stp";
@@ -65,7 +65,7 @@ module.exports = function (app, checkJwt) {
 
     });
 
-    app.get("/api/forge/download", async (req, res) => {
+    app.get("/forge/download", async (req, res) => {
 
         const fileName = "fuck-this.obj";
 

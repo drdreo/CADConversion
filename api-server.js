@@ -73,7 +73,7 @@ app.get("/health", (req, res) => {
     res.json({status: "Available"});
 });
 
-app.get("/api/files", checkJwt, (req, res, next) => {
+app.get("/files", checkJwt, (req, res) => {
     const user = req.user.sub.split("|")[1];
 
     if (!fs.existsSync(UPLOAD_DIR)) {
@@ -93,7 +93,7 @@ app.get("/api/files", checkJwt, (req, res, next) => {
     });
 });
 
-app.get("/api/files/download/:fileName", checkJwt, (req, res) => {
+app.get("/files/download/:fileName", checkJwt, (req, res) => {
     const user = req.user.sub.split("|")[1];
     const fileName = req.params.fileName;
 
@@ -107,7 +107,7 @@ app.get("/api/files/download/:fileName", checkJwt, (req, res) => {
     });
 });
 
-app.post("/api/upload", checkJwt, multipartMiddleware, (req, res) => {
+app.post("/upload", checkJwt, multipartMiddleware, (req, res) => {
 
     const user = req.user.sub.split("|")[1]; // remove auth0 from sub
     const files = req.files.uploads;
