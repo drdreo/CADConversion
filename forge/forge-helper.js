@@ -29,16 +29,18 @@ async function downloadForgeFile(encodedSourceURN, fileName) {
         throw new Error("No obj child found in derivatives!");
     }
 
+    const convertedFileName = fileName.split('.')[0] + '.obj';
+
     const download = await downloadTranslatedFile(encodedSourceURN, objChild.urn);
     return new Promise((resolve, reject) => {
-        writeFile(`conversions/${fileName}`, download.body, err => {
+        writeFile(`conversions/${convertedFileName}`, download.body, err => {
             if (err) {
                 console.error(err);
                 reject(err.message);
                 return;
             }
-            console.log(`Converted successfully - /conversions/${fileName}`);
-            resolve({downloadPath: `/conversions/${fileName}`});
+            console.log(`Converted ${fileName} successfully - /conversions/${convertedFileName}`);
+            resolve({downloadPath: `/conversions/${convertedFileName}`});
         });
     });
 }

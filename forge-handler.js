@@ -48,6 +48,7 @@ module.exports = function (app, checkJwt) {
         }
     });
 
+    // DEVING routes - NOT USED IN PROD
     app.get("/forge/convert", async (req, res) => {
         const filePath = "samples/bauplan.stp";
 
@@ -65,6 +66,7 @@ module.exports = function (app, checkJwt) {
 
     });
 
+    // DEVING routes  - NOT USED IN PROD
     app.get("/forge/download", async (req, res) => {
 
         const fileName = "fuck-this.obj";

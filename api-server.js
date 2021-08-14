@@ -82,8 +82,7 @@ app.get("/files", checkJwt, (req, res) => {
 
     fs.readdir(`${UPLOAD_DIR}/${user}`, (err, files) => {
         if (err) {
-            res.status(500);
-            res.send(err.message);
+            res.send({files: []});
         } else {
             files = files.map(file => {
                 return {name: file};
@@ -121,7 +120,8 @@ app.post("/upload", checkJwt, multipartMiddleware, (req, res) => {
 
             uploadFileToForge(`${UPLOAD_DIR}/${user}/${file.name}`, file.name)
                 .then(res => {
-                    console.log(res.body);
+                    console.log(res.body.result);
+                    console.log(res.body.acceptedJobs);
                     unfinishedTranslations.push({urn: res.body.urn, name: file.name});
                 })
                 .catch(console.log);
