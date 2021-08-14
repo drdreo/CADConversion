@@ -14,7 +14,7 @@ const bodyParser = require("body-parser");
 const multipart = require("connect-multiparty");
 const multipartMiddleware = multipart({uploadDir: UPLOAD_DIR});
 
-const authConfig = require("./auth_config.json");
+const authConfig = process.env.NODE_ENV !== "production" ? require("./auth_config.json") : require("./auth_config.prod.json");
 const {uploadFileToForge, downloadForgeFile} = require("./forge/forge-helper");
 
 const app = express();
@@ -144,7 +144,7 @@ require("./forge-handler")(app, checkJwt);
 
 const port = process.env.API_SERVER_PORT || 3001;
 
-app.listen(port, () => console.log(`Conversion API listening on port ${port}`));
+app.listen(port, () => console.log(`Conversion API[${process.env.NODE_ENV}] listening on port ${port}`));
 
 // scheduler to poll for finished translations
 setInterval(async () => {
