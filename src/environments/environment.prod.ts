@@ -1,4 +1,4 @@
-import config from '../../auth_config.json';
+import config from '../../auth_config.prod.json';
 
 const { domain, clientId, audience, apiUri, errorPath } = config as {
 	domain: string;
@@ -20,5 +20,5 @@ export const environment = {
 	httpInterceptor: {
 		allowedList: [`${ apiUri }/*`]
 	},
-	conversionAPI: 'http://localhost:3001/api/upload'
+	conversionAPI: apiUri
 };

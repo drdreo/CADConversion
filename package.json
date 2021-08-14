@@ -1,14 +1,12 @@
 {
   "name": "conversion-app",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "scripts": {
     "start": "ng serve",
     "build": "ng build --prod",
-    "server:app": "node server.js",
     "server:api": "node api-server.js",
-    "dev": "npm-run-all --parallel start server:api",
     "postbuild": "npm run copy:server",
-    "copy:server": "copyfiles api-server.js forge-handler.js auth_config.json utils.js dist",
+    "copy:server": "copyfiles api-server.js forge-handler.js auth_config.prod.json .env.prod utils.js dist",
     "server:start:prod": "forever start api-server.js",
     "server:stop:prod": "forever stop api-server.js",
     "server:list": "forever list"

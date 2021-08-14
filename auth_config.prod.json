@@ -1,0 +1,8 @@
+{
+  "domain": "thiele.eu.auth0.com",
+  "clientId": "taTk05PIv3l0GAshcVl3gUaxMqnfCiOp",
+  "audience": "https://vr.gpvc.at",
+  "apiUri": "https://vr.gpvc.at",
+  "appUri": "https://vr.gpvc.at",
+  "errorPath": "/error"
+}
