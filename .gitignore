@@ -3,15 +3,16 @@ auth_config.json
 auth_config.prod.json
 
 .env
-.env
+.env.prod
 
+/uploads
+/conversions
 /samples
 
 # compiled output
 /dist
 /tmp
 /out-tsc
-/uploads
 
 # Only exists if Bazel was run
 /bazel-out
