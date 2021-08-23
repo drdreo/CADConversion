@@ -1,8 +1,10 @@
 const fs = require("fs");
+const path = require("path");
 
 const dotenv = require("dotenv");
 dotenv.config();
 const UPLOAD_DIR = "uploads";
+const CONVERSION_DIR = "conversions";
 
 const express = require("express");
 const morgan = require("morgan");
@@ -11,8 +13,18 @@ const cors = require("cors");
 const jwt = require("express-jwt");
 const jwksRsa = require("jwks-rsa");
 const bodyParser = require("body-parser");
-const multipart = require("connect-multiparty");
-const multipartMiddleware = multipart({uploadDir: UPLOAD_DIR});
+const multer = require('multer');
+
+const multerStorage = multer.diskStorage({
+                                       destination: function(req, file, cb) {
+                                           cb(null, UPLOAD_DIR);
+                                       },
+
+                                       filename: function(req, file, cb) {
+                                           cb(null, file.originalname);
+                                       }
+                                   });
+const upload = multer({ storage: multerStorage });
 
 const authConfig = process.env.NODE_ENV !== "production" ? require("./auth_config.json") : require("./auth_config.prod.json");
 const {uploadFileToForge, downloadForgeFile} = require("./forge/forge-helper");
@@ -32,9 +44,19 @@ function requestLogger(httpModule) {
 requestLogger(require("http"));
 requestLogger(require("https"));
 
+if (!fs.existsSync(CONVERSION_DIR)) {
+    fs.mkdirSync(CONVERSION_DIR);
+}
+
 if (!authConfig.domain || !authConfig.audience || authConfig.audience === "YOUR_API_IDENTIFIER") {
     console.log(
         "Exiting: Please make sure that auth_config.json is in place and populated with valid domain and audience values"
+    );
+
+    process.exit();
+} else if(!process.env.FORGE_CLIENT_ID){
+    console.log(
+        "Exiting: Please make sure that the forge config is present"
     );
 
     process.exit();
@@ -67,7 +89,7 @@ const checkJwt = jwt({
                          algorithms: ["RS256"]
                      });
 
-app.use("/conversions", express.static("conversions"));
+app.use("/conversions", express.static(CONVERSION_DIR));
 
 app.get("/health", (req, res) => {
     res.json({status: "Available"});
@@ -92,11 +114,11 @@ app.get("/files", checkJwt, (req, res) => {
     });
 });
 
-app.get("/files/download/:fileName", checkJwt, (req, res) => {
-    const user = req.user.sub.split("|")[1];
+app.get("/files/download/:userID/:fileName", (req, res) => {
+    const userID = req.params.userID;
     const fileName = req.params.fileName;
 
-    res.download(`${UPLOAD_DIR}/${user}/${fileName}`, fileName, (err) => {
+    res.download(`${UPLOAD_DIR}/${userID}/${fileName}`, fileName, (err) => {
         if (err) {
             res.status(500)
                .send({
@@ -106,23 +128,24 @@ app.get("/files/download/:fileName", checkJwt, (req, res) => {
     });
 });
 
-app.post("/upload", checkJwt, multipartMiddleware, (req, res) => {
+app.post("/upload", checkJwt, upload.array('uploads[]'), (req, res) => {
 
     const user = req.user.sub.split("|")[1]; // remove auth0 from sub
-    const files = req.files.uploads;
+    const files = req.files;
 
     renameUploadedFiles(user, files).then(async () => {
-        console.log("Uploaded files to server: ", files.map(file => file.name));
+        console.log("Uploaded files to server: ", files.map(file => file.originalname));
 
         // upload to forge
         for (let file of files) {
-            console.log("Uploading file to forge: ", file.name);
+            const fileName = file.originalname
+            console.log("Uploading file to forge: ", fileName);
 
-            uploadFileToForge(`${UPLOAD_DIR}/${user}/${file.name}`, file.name)
+            uploadFileToForge(`${UPLOAD_DIR}/${user}/${fileName}`, fileName)
                 .then(res => {
                     console.log(res.body.result);
                     console.log(res.body.acceptedJobs);
-                    unfinishedTranslations.push({urn: res.body.urn, name: file.name});
+                    unfinishedTranslations.push({urn: res.body.urn, name: fileName});
                 })
                 .catch(console.log);
         }
@@ -171,7 +194,7 @@ function renameUploadedFiles(user, files) {
             }
 
             for (let file of files) {
-                fs.rename(file.path, `${UPLOAD_DIR}/${user}/${file.originalFilename}`, function (err) {
+                fs.rename(file.path, `${UPLOAD_DIR}/${user}/${file.originalname}`, function (err) {
                     if (err) {
                         console.log("ERROR: " + err);
                         reject(err);

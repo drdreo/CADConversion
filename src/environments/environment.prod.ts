@@ -20,5 +20,5 @@ export const environment = {
 	httpInterceptor: {
 		allowedList: [`${ apiUri }/*`]
 	},
-	conversionAPI: apiUri
+	conversionAPI: apiUri + '/api'
 };

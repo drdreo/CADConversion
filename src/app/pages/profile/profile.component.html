@@ -5,11 +5,8 @@
         </div>
         <div class="col-md">
             <h2>{{ user.name }}</h2>
-            <p class="lead text-muted">{{ user.email }}</p>
+            <p class="lead text-muted">Email: {{ user.email }}</p>
+            <p class="lead text-muted">ID: {{ user.sub.split('|')[1] }}</p>
         </div>
-    </div>
-
-    <div class="row" *ngIf="profileJson">
-      <code class="json">{{profileJson}}</code>
     </div>
 </div>

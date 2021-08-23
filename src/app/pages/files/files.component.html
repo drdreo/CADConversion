@@ -2,37 +2,35 @@
 
     <h1>Files</h1>
     <p class="lead d-flex justify-content-between">
-        Upload more files.
-        <button class="btn btn-sm btn-outline-secondary clear-btn" (click)="clearUpload()">Clear</button>
-    </p>
+        Upload more files. </p>
 
     <file-upload [control]="fileUploadControl"></file-upload>
 
+    <ng-container *ngIf="files$ | async as files">
+        <table class="table mt-3" *ngIf="files.length">
+            <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">File</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let file of files; let i = index">
+                <th scope="row">{{i}}</th>
+                <td>{{file.name}}</td>
+                <td class="col-1 d-none">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-danger">
+                            Remove
+                        </button>
+                        <button class="btn btn-outline-primary" (click)="requestFileDownload(file.name)">
+                            Download
+                        </button>
+                    </div>
+                </td>
+            </tr>
 
-    <table class="table mt-3" *ngIf="files$ | async as files">
-        <thead>
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">File</th>
-            <th scope="col" class="col-1">Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let file of files; let i = index">
-            <th scope="row">{{i}}</th>
-            <td>{{file.name}}</td>
-            <td class="col-1">
-                <div class="btn-group" role="group">
-                    <button class="btn btn-outline-danger">
-                        Remove
-                    </button>
-                    <button class="btn btn-outline-primary" (click)="requestFileDownload(file.name)">
-                        Download
-                    </button>
-                </div>
-            </td>
-        </tr>
-
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </ng-container>
 </div>

@@ -3,7 +3,7 @@ auth_config.json
 auth_config.prod.json
 
 .env
-.env.prod
+.env
 
 /samples
 
