@@ -66,14 +66,14 @@ async function getManifest(urn) {
     return new DerivativesApi().getManifest(urn, {}, client, token);
 }
 
-async function downloadTranslatedFile(urn, derivativeUrn) {
+async function downloadTranslatedFile(urn, derivativeUrn, opts = {}) {
     console.log(`Downloading urn[${urn}]`);
     console.log(`derivativeUrn[${derivativeUrn}]`);
 
     const client = getClient();
     const token = await getInternalToken();
 
-    return new DerivativesApi().getDerivativeManifest(urn, derivativeUrn, {}, client, token);
+    return new DerivativesApi().getDerivativeManifest(urn, derivativeUrn, opts, client, token);
 }
 
 module.exports = {

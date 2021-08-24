@@ -29,6 +29,7 @@
     "@iplab/ngx-file-upload": "^3.3.1",
     "@ngneat/hot-toast": "^3.3.0",
     "@ngneat/overview": "^2.0.2",
+    "async": "^1.5.2",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",

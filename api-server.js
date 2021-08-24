@@ -1,10 +1,10 @@
 const fs = require("fs");
-const path = require("path");
 
 const dotenv = require("dotenv");
 dotenv.config();
 const UPLOAD_DIR = "uploads";
 const CONVERSION_DIR = "conversions";
+const TRANSLATION_POLLING_INTERVAL = 30000;
 
 const express = require("express");
 const morgan = require("morgan");
@@ -13,24 +13,32 @@ const cors = require("cors");
 const jwt = require("express-jwt");
 const jwksRsa = require("jwks-rsa");
 const bodyParser = require("body-parser");
-const multer = require('multer');
+const multer = require("multer");
 
 const multerStorage = multer.diskStorage({
-                                       destination: function(req, file, cb) {
-                                           cb(null, UPLOAD_DIR);
-                                       },
+                                             destination: function (req, file, cb) {
+                                                 cb(null, UPLOAD_DIR);
+                                             },
 
-                                       filename: function(req, file, cb) {
-                                           cb(null, file.originalname);
-                                       }
-                                   });
-const upload = multer({ storage: multerStorage });
+                                             filename: function (req, file, cb) {
+                                                 cb(null, file.originalname);
+                                             }
+                                         });
+const upload = multer({storage: multerStorage});
 
 const authConfig = process.env.NODE_ENV !== "production" ? require("./auth_config.json") : require("./auth_config.prod.json");
 const {uploadFileToForge, downloadForgeFile} = require("./forge/forge-helper");
 
 const app = express();
-const unfinishedTranslations = [];
+// const unfinishedTranslations = [];
+const unfinishedTranslations = [
+    {urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6dGhpZWxlLWNvbnZlcnNpb24vQnVlY2hlbF9SZXZfSy5zdHA',
+        user: '114662313698141434676',
+        started: Date.now(),
+        downloading: false,
+        fileName: 'Buechel_Rev_K.stp'
+    }
+];
 
 
 function requestLogger(httpModule) {
@@ -49,16 +57,10 @@ if (!fs.existsSync(CONVERSION_DIR)) {
 }
 
 if (!authConfig.domain || !authConfig.audience || authConfig.audience === "YOUR_API_IDENTIFIER") {
-    console.log(
-        "Exiting: Please make sure that auth_config.json is in place and populated with valid domain and audience values"
-    );
-
+    console.log("Exiting: Please make sure that auth_config.json is in place and populated with valid domain and audience values");
     process.exit();
-} else if(!process.env.FORGE_CLIENT_ID){
-    console.log(
-        "Exiting: Please make sure that the forge config is present"
-    );
-
+} else if (!process.env.FORGE_CLIENT_ID) {
+    console.log("Exiting: Please make sure that the forge config is present");
     process.exit();
 }
 
@@ -128,7 +130,7 @@ app.get("/files/download/:userID/:fileName", (req, res) => {
     });
 });
 
-app.post("/upload", checkJwt, upload.array('uploads[]'), (req, res) => {
+app.post("/upload", checkJwt, upload.array("uploads[]"), (req, res) => {
 
     const user = req.user.sub.split("|")[1]; // remove auth0 from sub
     const files = req.files;
@@ -138,14 +140,18 @@ app.post("/upload", checkJwt, upload.array('uploads[]'), (req, res) => {
 
         // upload to forge
         for (let file of files) {
-            const fileName = file.originalname
-            console.log("Uploading file to forge: ", fileName);
+            const fileName = file.originalname;
 
             uploadFileToForge(`${UPLOAD_DIR}/${user}/${fileName}`, fileName)
                 .then(res => {
-                    console.log(res.body.result);
-                    console.log(res.body.acceptedJobs);
-                    unfinishedTranslations.push({urn: res.body.urn, name: fileName});
+                    console.log("uploadFileToForge result:" + res.body.result);
+                    unfinishedTranslations.push({
+                                                    user,
+                                                    urn: res.body.urn,
+                                                    fileName,
+                                                    downloading: false,
+                                                    started: Date.now()
+                                                });
                 })
                 .catch(console.log);
         }
@@ -169,6 +175,7 @@ const port = process.env.API_SERVER_PORT || 3001;
 
 app.listen(port, () => console.log(`Conversion API[${process.env.NODE_ENV}] listening on port ${port}`));
 
+
 // scheduler to poll for finished translations
 setInterval(async () => {
 
@@ -176,20 +183,25 @@ setInterval(async () => {
     let i = unfinishedTranslations.length;
     while (i--) {
         try {
-            const unfinishedTrans = unfinishedTranslations[i];
-            await downloadForgeFile(unfinishedTrans.urn, unfinishedTrans.name);
+            const {user, urn, fileName} = unfinishedTranslations[i];
+            await downloadForgeFile(user, urn, fileName, unfinishedTranslations[i]);
+            console.log("Translation finished after " + Date.now() - unfinishedTranslations[i].started);
             unfinishedTranslations.splice(i, 1);
         } catch (e) {
             console.log(e.message);
         }
     }
-}, 10000);
+}, TRANSLATION_POLLING_INTERVAL);
+
+
+
 
 function renameUploadedFiles(user, files) {
     return new Promise((resolve, reject) => {
         fs.access(`${UPLOAD_DIR}/${user}`, (error) => {
             if (error) {
                 // Directory does not exist
+                console.log("Directory not found. Creating it now.");
                 fs.mkdirSync(`${UPLOAD_DIR}/${user}`);
             }
 
@@ -197,11 +209,11 @@ function renameUploadedFiles(user, files) {
                 fs.rename(file.path, `${UPLOAD_DIR}/${user}/${file.originalname}`, function (err) {
                     if (err) {
                         console.log("ERROR: " + err);
-                        reject(err);
+                        return reject(err);
                     }
                 });
             }
-            resolve();
+            return resolve();
         });
     });
 }
