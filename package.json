@@ -6,7 +6,7 @@
     "build": "ng build --prod",
     "server:api": "node api-server.js",
     "postbuild": "npm run copy:server",
-    "copy:server": "copyfiles api-server.js forge-handler.js auth_config.prod.json .env utils.js dist",
+    "copy:server": "copyfiles api-server.js forge-handler.js auth_config.prod.json .env .env.prod utils.js dist",
     "server:start:prod": "forever start api-server.js",
     "server:stop:prod": "forever stop api-server.js",
     "server:list": "forever list"

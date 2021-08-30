@@ -230,12 +230,12 @@ function renameUploadedFiles(user, files) {
             }
 
             for (let file of files) {
-                fs.rename(file.path, `${UPLOAD_DIR}/${user}/${file.originalname}`, function (err) {
-                    if (err) {
-                        console.log("ERROR: " + err);
-                        return reject(err);
-                    }
-                });
+                try {
+                    fs.renameSync(file.path, `${UPLOAD_DIR}/${user}/${file.originalname}`);
+                } catch (err) {
+                    console.log("ERROR: " + err);
+                    return reject(err);
+                }
             }
             return resolve();
         });
