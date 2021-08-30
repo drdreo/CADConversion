@@ -66,10 +66,17 @@ async function getManifest(urn) {
     return new DerivativesApi().getManifest(urn, {}, client, token);
 }
 
-async function downloadTranslatedFile(urn, derivativeUrn, opts = {}) {
-    console.log(`Downloading urn[${urn}]`);
-    console.log(`derivativeUrn[${derivativeUrn}]`);
+async function getDerivativeManifestInfo(urn, derivativeUrn) {
+    console.log(`Getting manifest info for urn[${urn}]`);
 
+    const client = getClient();
+    const token = await getInternalToken();
+
+    return new DerivativesApi().getDerivativeManifestInfo(urn, derivativeUrn, {}, client, token);
+}
+
+async function downloadTranslatedFile(urn, derivativeUrn, opts = {}) {
+    // console.log(`Downloading urn[${urn}] derivativeUrn[${derivativeUrn}] ${opts.range ?? 'range:' + opts.range}`);
     const client = getClient();
     const token = await getInternalToken();
 
@@ -79,5 +86,6 @@ async function downloadTranslatedFile(urn, derivativeUrn, opts = {}) {
 module.exports = {
     translateJob,
     getManifest,
+    getDerivativeManifestInfo,
     downloadTranslatedFile
 };

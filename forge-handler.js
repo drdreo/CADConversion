@@ -1,5 +1,5 @@
 const {createBucket, getBuckets} = require("./forge/oss");
-const {getManifest} = require("./forge/modelderivative");
+const {getManifest, getDerivativeManifestInfo} = require("./forge/modelderivative");
 const {uploadFileToForge, downloadForgeFile} = require("./forge/forge-helper");
 
 
@@ -41,6 +41,21 @@ module.exports = function (app, checkJwt) {
             const {body} = await getManifest(urn);
             console.log(body);
             res.json({manifest: body});
+        } catch (e) {
+            console.log(e);
+            res.status(e.statusCode);
+            res.send({error: e.statusBody});
+        }
+    });
+
+    app.get("/forge/info/:urn/:derivativeUrn", async (req, res) => {
+        const urn = req.params.urn;
+        const derivativeUrn = req.params.derivativeUrn;
+
+        try {
+            const {body} = await getDerivativeManifestInfo(urn, derivativeUrn);
+            console.log(body);
+            res.json({info: body});
         } catch (e) {
             console.log(e);
             res.status(e.statusCode);

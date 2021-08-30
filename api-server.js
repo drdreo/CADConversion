@@ -30,15 +30,16 @@ const authConfig = process.env.NODE_ENV !== "production" ? require("./auth_confi
 const {uploadFileToForge, downloadForgeFile} = require("./forge/forge-helper");
 
 const app = express();
-// const unfinishedTranslations = [];
-const unfinishedTranslations = [
-    {urn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6dGhpZWxlLWNvbnZlcnNpb24vQnVlY2hlbF9SZXZfSy5zdHA',
-        user: '114662313698141434676',
-        started: Date.now(),
-        downloading: false,
-        fileName: 'Buechel_Rev_K.stp'
-    }
-];
+const unfinishedTranslations = [];
+// const unfinishedTranslations = [
+//     {
+//         urn: "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6dGhpZWxlLWNvbnZlcnNpb24vQnVlY2hlbF9SZXZfSy5zdHA",
+//         user: "114662313698141434676",
+//         started: Date.now(),
+//         downloading: false,
+//         fileName: "Buechel_Rev_K.stp"
+//     }
+// ];
 
 
 function requestLogger(httpModule) {
@@ -116,11 +117,26 @@ app.get("/files", checkJwt, (req, res) => {
     });
 });
 
+// app.get("/conversions/:user", checkJwt, (req, res) => {
+//     const user = req.params.user;
+//
+//     fs.readdir(`${CONVERSION_DIR}/${user}`, (err, files) => {
+//         if (err) {
+//             res.send({convertedFiles: []});
+//         } else {
+//             files = files.map(file => {
+//                 return {name: file};
+//             });
+//             res.send({convertedFiles: files});
+//         }
+//     });
+// });
+
 app.get("/files/download/:userID/:fileName", (req, res) => {
     const userID = req.params.userID;
     const fileName = req.params.fileName;
 
-    res.download(`${UPLOAD_DIR}/${userID}/${fileName}`, fileName, (err) => {
+    res.download(`${CONVERSION_DIR}/${userID}/${fileName}`, fileName, (err) => {
         if (err) {
             res.status(500)
                .send({
@@ -192,8 +208,6 @@ setInterval(async () => {
         }
     }
 }, TRANSLATION_POLLING_INTERVAL);
-
-
 
 
 function renameUploadedFiles(user, files) {
