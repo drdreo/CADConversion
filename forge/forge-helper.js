@@ -74,7 +74,8 @@ async function downloadForgeFile(user, encodedSourceURN, fileName, downloadJob, 
     return new Promise((resolve, reject) => {
         let progress = 0;
 
-        async.each(downloadTasks, (task, callback) => {
+        // could be optimized to run downloads in parallel and stitch chunks together after
+        async.eachSeries(downloadTasks, (task, callback) => {
             task.run().then(() => {
                 if (opts.onProgress) {
                     progress += 100.0 / nbChunks;

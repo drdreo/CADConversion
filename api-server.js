@@ -1,6 +1,7 @@
 const fs = require("fs");
-
+const path = require("path");
 const dotenv = require("dotenv");
+
 dotenv.config();
 const UPLOAD_DIR = "uploads";
 const CONVERSION_DIR = "conversions";
@@ -24,7 +25,16 @@ const multerStorage = multer.diskStorage({
                                                  cb(null, file.originalname);
                                              }
                                          });
-const upload = multer({storage: multerStorage});
+const upload = multer({
+                          storage: multerStorage,
+                          fileFilter: function (req, file, callback) {
+                              const ext = path.extname(file.originalname);
+                              if (ext !== ".stp") {
+                                  return callback(new Error("Only .stp files are allowed"));
+                              }
+                              callback(null, true);
+                          }
+                      });
 
 const authConfig = process.env.NODE_ENV !== "production" ? require("./auth_config.json") : require("./auth_config.prod.json");
 const {uploadFileToForge, downloadForgeFile} = require("./forge/forge-helper");
