@@ -17,24 +17,24 @@ const bodyParser = require("body-parser");
 const multer = require("multer");
 
 const multerStorage = multer.diskStorage({
-                                             destination: function (req, file, cb) {
-                                                 cb(null, UPLOAD_DIR);
-                                             },
+    destination: function (req, file, cb) {
+        cb(null, UPLOAD_DIR);
+    },
 
-                                             filename: function (req, file, cb) {
-                                                 cb(null, file.originalname);
-                                             }
-                                         });
+    filename: function (req, file, cb) {
+        cb(null, file.originalname);
+    }
+});
 const upload = multer({
-                          storage: multerStorage,
-                          fileFilter: function (req, file, callback) {
-                              const ext = path.extname(file.originalname);
-                              if (ext !== ".stp") {
-                                  return callback(new Error("Only .stp files are allowed"));
-                              }
-                              callback(null, true);
-                          }
-                      });
+    storage: multerStorage,
+    fileFilter: function (req, file, callback) {
+        const ext = path.extname(file.originalname);
+        if (ext !== ".stp") {
+            return callback(new Error("Only .stp files are allowed"));
+        }
+        callback(null, true);
+    }
+});
 
 const authConfig = process.env.NODE_ENV !== "production" ? require("./auth_config.json") : require("./auth_config.prod.json");
 const {uploadFileToForge, downloadForgeFile} = require("./forge/forge-helper");
@@ -77,32 +77,54 @@ if (!authConfig.domain || !authConfig.audience || authConfig.audience === "YOUR_
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
-                                  extended: true
-                              }));
+    extended: true
+}));
 
 app.use(morgan("dev"));
 app.use(helmet());
 app.use(
     cors({
-             origin: authConfig.appUri
-         })
+        origin: authConfig.appUri
+    })
 );
 
 
 const checkJwt = jwt({
-                         secret: jwksRsa.expressJwtSecret({
-                                                              cache: true,
-                                                              rateLimit: true,
-                                                              jwksRequestsPerMinute: 5,
-                                                              jwksUri: `https://${authConfig.domain}/.well-known/jwks.json`
-                                                          }),
+    secret: jwksRsa.expressJwtSecret({
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 5,
+        jwksUri: `https://${authConfig.domain}/.well-known/jwks.json`
+    }),
 
-                         audience: authConfig.audience,
-                         issuer: `https://${authConfig.domain}/`,
-                         algorithms: ["RS256"]
-                     });
+    audience: authConfig.audience,
+    issuer: `https://${authConfig.domain}/`,
+    algorithms: ["RS256"]
+});
 
-app.use("/conversions", express.static(CONVERSION_DIR));
+
+const staticConversionMW = express.static(CONVERSION_DIR);
+// app.use("/conversions", staticConversionMW);
+
+app.use("/conversions", function (req, res, next) {
+    console.log('auth: ' + req.headers.authorization);
+    const reject = () => {
+        res.setHeader('www-authenticate', 'Basic');
+        res.sendStatus(401);
+    };
+
+    const authorization = req.headers.authorization;
+    if (!authorization) {
+        return reject()
+    }
+
+    const [username, password] = Buffer.from(authorization.replace('Basic ', ''), 'base64').toString().split(':')
+    if (!(username === 'thü' && password === 'e46cb5ef-7d4c-4a75-9a37-fc2bd37fc22f')) {
+        return reject()
+    }
+
+    staticConversionMW(req, res, next);
+});
 
 app.get("/health", (req, res) => {
     res.json({status: "Available"});
@@ -149,9 +171,9 @@ app.get("/files/download/:userID/:fileName", (req, res) => {
     res.download(`${CONVERSION_DIR}/${userID}/${fileName}`, fileName, (err) => {
         if (err) {
             res.status(500)
-               .send({
-                         message: "Could not download the file. " + err
-                     });
+                .send({
+                    message: "Could not download the file. " + err
+                });
         }
     });
 });
@@ -172,24 +194,24 @@ app.post("/upload", checkJwt, upload.array("uploads[]"), (req, res) => {
                 .then(res => {
                     console.log("uploadFileToForge result:" + res.body.result);
                     unfinishedTranslations.push({
-                                                    user,
-                                                    urn: res.body.urn,
-                                                    fileName,
-                                                    downloading: false,
-                                                    started: Date.now()
-                                                });
+                        user,
+                        urn: res.body.urn,
+                        fileName,
+                        downloading: false,
+                        started: Date.now()
+                    });
                 })
                 .catch(console.log);
         }
 
         res.json({
-                     "message": "File uploaded successfully"
-                 });
+            "message": "File uploaded successfully"
+        });
     }).catch(err => {
         res.status(500)
-           .send({
-                     message: "Could not upload file. " + err
-                 });
+            .send({
+                message: "Could not upload file. " + err
+            });
     });
 });
 
